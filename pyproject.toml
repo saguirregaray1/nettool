@@ -1,0 +1,19 @@
+[project]
+name = "nettool"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "saguirregaray1", email = "saguirregaray1@correo.um.edu.uy" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "typer>=0.15.1",
+]
+
+[project.scripts]
+nettool = "nettool:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
