@@ -58,6 +58,25 @@ def get_addr_str(conn) -> tuple[str, str]:
     return laddr, raddr
 
 
+def create_conns_table():
+    table = Table(
+        title="[bold cyan]Network Connections[/bold cyan]",
+        show_lines=True,
+        header_style="bold",
+        border_style="bright_blue",
+        title_style="bold",
+    )
+
+    table.add_column("Protocol", style="bold yellow")
+    table.add_column("L-Address", style="bold green")
+    table.add_column("R-Address", style="bold green")
+    table.add_column("Status", style="bold magenta")
+    table.add_column("PID", style="bold cyan", justify="right")
+    table.add_column("P-Name", style="bold red")
+
+    return table
+
+
 @app.command()
 def conns(
     protocol: str = typer.Option(
@@ -85,20 +104,7 @@ def conns(
         )
         return
 
-    table = Table(
-        title="[bold cyan]Network Connections[/bold cyan]",
-        show_lines=True,
-        header_style="bright_blue",
-        border_style="bright_blue",
-        title_style="bold",
-    )
-
-    table.add_column("Protocol", style="bold yellow")
-    table.add_column("L-Address", style="bold green")
-    table.add_column("R-Address", style="bold green")
-    table.add_column("Status", style="bold magenta")
-    table.add_column("PID", style="bold cyan", justify="right")
-    table.add_column("P-Name", style="bold red")
+    table = create_conns_table()
 
     for conn in connections:
         if ipv4_only and conn.family != socket.AF_INET:
@@ -187,7 +193,10 @@ def ip():
 
 
 @app.command()
-def speed():
+def speed(
+    only_upload: bool = typer.Option(False, "-u", help="Only test upload speed"),
+    only_download: bool = typer.Option(False, "-d", help="Only test download speed"),
+):
     """
     Measure and display both download and upload speeds.
     """
@@ -199,19 +208,41 @@ def speed():
     )
 
     try:
+        if only_upload and only_download:
+            console.print(
+                Panel.fit(
+                    Text(
+                        "Parameters only-upload and only-download are incompatible",
+                        style="bold red",
+                    ),
+                    title="[ERROR]",
+                    border_style="red",
+                )
+            )
+            return
+
         st = speedtest.Speedtest()
         st.get_best_server()
 
-        console.print("[bold yellow]Measuring download speed...[/bold yellow]")
-        download_speed_mbps = st.download() / 1_000_000
+        results = []
 
-        console.print("[bold yellow]Measuring upload speed...[/bold yellow]")
-        upload_speed_mbps = st.upload() / 1_000_000
+        if only_upload or not only_download:
+            console.print("[bold yellow]Measuring upload speed...[/bold yellow]")
+            upload_speed_mbps = st.upload() / 1_000_000
+            results.append(
+                f"[bold white]Upload Speed:[/bold white] {upload_speed_mbps:.2f} Mbps"
+            )
+        if only_download or not only_upload:
+            console.print("[bold yellow]Measuring download speed...[/bold yellow]")
+            download_speed_mbps = st.download() / 1_000_000
+            results.append(
+                f"[bold white]Download Speed:[/bold white] {download_speed_mbps:.2f} Mbps"
+            )
 
+        result_text = "\n".join(results)
         console.print(
             Panel.fit(
-                f"[bold white]Download Speed:[/bold white] {download_speed_mbps:.2f} Mbps\n"
-                f"[bold white]Upload Speed:[/bold white] {upload_speed_mbps:.2f} Mbps",
+                result_text,
                 title="[bold]Internet Speed Test[/bold]",
                 border_style="green",
             )
