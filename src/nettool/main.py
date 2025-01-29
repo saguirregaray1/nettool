@@ -1,10 +1,13 @@
 import socket
 import typer
 import psutil
-from rich import print
+from rich.panel import Panel
+from rich.text import Text
 from rich.console import Console
 from rich.table import Table
 from enum import Enum
+import httpx
+import speedtest
 
 app = typer.Typer()
 console = Console()
@@ -68,12 +71,35 @@ def conns(
     ipv4_only: bool = typer.Option(False, "--ipv4", help="Only show IPv4 connections"),
     ipv6_only: bool = typer.Option(False, "--ipv6", help="Only show IPv6 connections"),
 ):
+    """
+    Display a detailed list of active network connections on your system.
+    """
     connections = psutil.net_connections()
     if not connections:
-        print("[bold red]No active connections found.")
+        console.print(
+            Panel.fit(
+                Text("No active connections found", style="yellow"),
+                title="[WARNING]",
+                border_style="yellow",
+            )
+        )
         return
 
-    table = Table("Protocol", "L-Address", "R-Address", "Status", "PID", "P-Name")
+    table = Table(
+        title="[bold cyan]Network Connections[/bold cyan]",
+        show_lines=True,
+        header_style="bright_blue",
+        border_style="bright_blue",
+        title_style="bold",
+    )
+
+    table.add_column("Protocol", style="bold yellow")
+    table.add_column("L-Address", style="bold green")
+    table.add_column("R-Address", style="bold green")
+    table.add_column("Status", style="bold magenta")
+    table.add_column("PID", style="bold cyan", justify="right")
+    table.add_column("P-Name", style="bold red")
+
     for conn in connections:
         if ipv4_only and conn.family != socket.AF_INET:
             continue
@@ -119,8 +145,86 @@ def conns(
 
 
 @app.command()
-def hello():
-    print("hello")
+def ip():
+    """
+    Display your public IP and geolocation information.
+    """
+    try:
+        url = "https://ipinfo.io/json"
+        response = httpx.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        console.print(
+            Panel.fit(
+                f"[bold cyan]Public IP:[/bold cyan] {data.get('ip', 'N/A')}\n"
+                f"[bold green]City:[/bold green] {data.get('city', 'N/A')}\n"
+                f"[bold yellow]Region:[/bold yellow] {data.get('region', 'N/A')}\n"
+                f"[bold blue]Country:[/bold blue] {data.get('country', 'N/A')}\n"
+                f"[bold magenta]Location:[/bold magenta] {data.get('loc', 'N/A')}\n"
+                f"[bold red]ISP:[/bold red] {data.get('org', 'N/A')}",
+                title="[bold]Public IP & Geolocation[/bold]",
+                border_style="blue",
+            )
+        )
+
+    except httpx.HTTPStatusError as e:
+        console.print(
+            Panel.fit(
+                Text(f"HTTP error occurred: {e}", style="bold red"),
+                title="[ERROR]",
+                border_style="red",
+            )
+        )
+    except httpx.RequestError as e:
+        console.print(
+            Panel.fit(
+                Text(f"Network error occurred: {e}", style="bold red"),
+                title="[ERROR]",
+                border_style="red",
+            )
+        )
+
+
+@app.command()
+def speed():
+    """
+    Measure and display both download and upload speeds.
+    """
+    console.print(
+        Panel.fit(
+            "[bold cyan]Testing internet speed... Please wait.[/bold cyan]",
+            border_style="cyan",
+        )
+    )
+
+    try:
+        st = speedtest.Speedtest()
+        st.get_best_server()
+
+        console.print("[bold yellow]Measuring download speed...[/bold yellow]")
+        download_speed_mbps = st.download() / 1_000_000
+
+        console.print("[bold yellow]Measuring upload speed...[/bold yellow]")
+        upload_speed_mbps = st.upload() / 1_000_000
+
+        console.print(
+            Panel.fit(
+                f"[bold white]Download Speed:[/bold white] {download_speed_mbps:.2f} Mbps\n"
+                f"[bold white]Upload Speed:[/bold white] {upload_speed_mbps:.2f} Mbps",
+                title="[bold]Internet Speed Test[/bold]",
+                border_style="green",
+            )
+        )
+
+    except Exception as e:
+        console.print(
+            Panel.fit(
+                Text(f"Error during speed test: {e}", style="bold red"),
+                title="[ERROR]",
+                border_style="red",
+            )
+        )
 
 
 if __name__ == "__main__":
