@@ -183,7 +183,7 @@ def ip():
                 f"[bold magenta]Location:[/bold magenta] {data.get('loc', 'N/A')}\n"
                 f"[bold red]ISP:[/bold red] {data.get('org', 'N/A')}",
                 title="[bold]Public IP & Geolocation[/bold]",
-                border_style="blue",
+                border_style="bright_blue",
             )
         )
 
@@ -257,7 +257,7 @@ def speed(
             Panel.fit(
                 result_text,
                 title="[bold]Internet Speed Test[/bold]",
-                border_style="green",
+                border_style="bright_blue",
             )
         )
 
