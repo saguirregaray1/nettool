@@ -93,6 +93,19 @@ def conns(
     """
     Display a detailed list of active network connections on your system.
     """
+    if ipv4_only and ipv6_only:
+        console.print(
+            Panel.fit(
+                Text(
+                    "Parameters ipv4-only and ipv6-only are incompatible",
+                    style="bold red",
+                ),
+                title="[ERROR]",
+                border_style="red",
+            )
+        )
+        return
+
     connections = psutil.net_connections()
     if not connections:
         console.print(
