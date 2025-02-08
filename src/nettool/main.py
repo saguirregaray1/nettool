@@ -1,13 +1,14 @@
 import socket
-import typer
-import psutil
-from rich.panel import Panel
-from rich.text import Text
-from rich.console import Console
-from rich.table import Table
 from enum import Enum
+
 import httpx
+import psutil
 import speedtest
+import typer
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 
 app = typer.Typer()
 console = Console()
